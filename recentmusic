@@ -1,0 +1,33 @@
+#!/bin/sh
+
+#recentmusic is a shell script that finds the most recently created directories 
+#the music directory, and if they have FLACS in them it converts these to mp3
+#moves the mp3's to the lossy directory.
+
+if [[ $# -eq 1 ]]; then
+	dirno=$1 
+elif [[ $# -eq 0 ]]; then
+	dirno=5
+elif [[ $# -gt 1 ]]; then 
+	echo "usage: recent5.sh [another number other than five if u prefer] "
+	exit
+fi
+
+find /home/ob600/endo/music/ -mindepth 1 -type d -printf "%T+\t%p\n" | sort\
+	|cut -f 2- | tail -n $dirno |\
+while read recentdir
+do 
+	recentdir_base=$(basename "$recentdir")
+	lossydir="/home/ob600/endo/lossy/"
+	find "$recentdir" -name "*.flac" &>/dev/null
+	if [  $(find "$recentdir" -name "*.flac" | wc -l) -gt 0 ]
+	then
+		mkdir "/home/ob600/endo/lossy/$recentdir_base"
+		find "$recentdir" -name "*.flac" -execdir ffmpeg -i {} \
+			-qscale:a 0 {}.mp3 \;
+		#find "$recentdir" -name "*.flac.mp3" -execdir mv 
+		find "$recentdir" -name "*.mp3" -execdir mv {} "$lossydir/\
+$recentdir_base" \;
+	
+	fi
+done
